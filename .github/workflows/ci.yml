@@ -1,53 +1,38 @@
 name: CI Pipeline
 
-# This workflow now triggers on pull requests targeting the 'dev' or 'main' branches.
-# This ensures code is validated before it's merged into either branch.
 on:
+  push:
+    branches: [main]
   pull_request:
-    branches:
-      - dev
-      - main
+    branches: [main]
 
 jobs:
   lint:
     runs-on: ubuntu-latest
-    
-    steps:
-      # 1. Checks out the code from your repository
-      - name: Checkout code
-        uses: actions/checkout@v4
 
-      # 2. Sets up the specified Python version and adds caching for Poetry
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-          cache: 'poetry' # Caches dependencies to speed up future runs
 
-      # 3. Installs Poetry, the dependency manager
       - name: Install Poetry
         uses: snok/install-poetry@v1
 
-      # 4. Installs project dependencies from your poetry.lock file
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
 
-      # 5. Runs Flake8 for quick style and error checking
       - name: Run Flake8
         run: poetry run flake8 src/
 
-      # 6. Runs Pylint and enforces a minimum score of 9.0
-      - name: Run Pylint and Check Score
+      - name: Run Pylint
         run: |
-          # Run pylint, print output to the log, and also save it to a file
           SCORE=$(poetry run pylint src/ | tee pylint.log | tail -n 2 | grep 'Your code has been rated at' | awk '{print $7}' | cut -d'/' -f1)
-          
           echo "Pylint score: $SCORE"
-          
-          # Check if the score is less than 9.0
           if (( $(echo "$SCORE < 9.0" | bc -l) )); then
-            echo "Pylint score is below the 9.0 threshold. Failing the build."
+            echo "Pylint score is below 9.0. Failing the build."
             exit 1
-          else
-            echo "Pylint score is acceptable."
           fi
