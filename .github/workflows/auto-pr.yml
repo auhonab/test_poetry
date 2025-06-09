@@ -1,74 +1,16 @@
-name: Auto Create Pull Request
+# File: .github/workflows/pull-request.yml
 
 on:
-  workflow_dispatch: # Allows manual triggering for testing
-  # You can replace workflow_dispatch with a schedule or other triggers
-  # For example, to run nightly:
-  # schedule:
-  #   - cron: '0 0 * * *' # Every day at midnight UTC
-  # Or after a specific job in another workflow finishes
+  push:
+    branches:
+    - dev
 
 jobs:
-  create_pr:
+  pull-request:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          # Fetch the entire history for git operations
-          fetch-depth: 0
-
-      - name: Set up Git config
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions-bot@users.noreply.github.com"
-
-      - name: Make some changes (example: update a file)
-        # Replace this with your actual logic that makes changes
-        # For example:
-        # - run: npm update # for JS projects
-        # - run: poetry update # for Python projects
-        # - run: echo "New content added at $(date)" >> README.md
-        run: |
-          echo "Automated update initiated at $(date)" >> automated_changes.txt
-          echo "This is an example of changes that would trigger a PR." >> automated_changes.txt
-
-      - name: Check for changes
-        id: git_diff
-        run: |
-          git add .
-          # Check if there are any changes staged
-          if git diff --staged --quiet; then
-            echo "No changes to commit. Exiting."
-            echo "::set-output name=has_changes::false"
-          else
-            echo "Changes detected. Proceeding to commit and create PR."
-            echo "::set-output name=has_changes::true"
-          fi
-
-      - name: Commit changes
-        if: steps.git_diff.outputs.has_changes == 'true'
-        run: |
-          git commit -m "chore: Automated changes [skip ci]" # Use [skip ci] to prevent infinite loops if your CI runs on push
-          git push origin HEAD:${{ github.ref_name }}-automated-updates --force # Push to a new branch for the PR
-
-      - name: Create Pull Request
-        if: steps.git_diff.outputs.has_changes == 'true'
-        uses: repo-sync/pull-request@v2
-        with:
-          destination_branch: main # The branch you want to merge into
-          pr_title: "chore: Automated updates from CI"
-          pr_body: |
-            This pull request contains automated changes.
-            Please review and merge if appropriate.
-
-            Triggered by: ${{ github.event_name }}
-            Run ID: ${{ github.run_id }}
-          pr_reviewer: your-github-username # Optional: Assign reviewers
-          github_token: ${{ secrets.ACTIONS_BOT_TOKEN }}
-          # Set to 'false' if you want to allow the workflow to create a new branch if it doesn't exist
-          source_branch: ${{ github.ref_name }}-automated-updates
-          # If the source branch is different from the current branch, you need to specify it.
-          # Example: If your changes are always on a feature branch 'auto-update-branch'
-          # source_branch: auto-update-branch
+    - uses: actions/checkout@v3
+    - name: pull-request
+    uses: diillson/auto-pull-request@v1.0.1
+      with:
+        destination_branch: "main"
